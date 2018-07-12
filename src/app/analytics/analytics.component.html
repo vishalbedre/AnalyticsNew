@@ -1,0 +1,352 @@
+<script src="https://cdn.jsdelivr.net/npm/vega@3.0.10"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@2.1.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@3.0.0"></script>
+<div class="container-fluid">
+
+  <div class="row mb-5">
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+    </div>
+    <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8">
+      <h1 class="text-center text-sm-center text-md-center text-lg-center text-uppercase text-primary"> Google Analytics </h1>
+      <div id="visBar"></div>
+    </div>
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+    </div>
+    <div class="col-md-6 col-lg-3 col-sm-7 col-xs-3 ">
+      <form class="form-inline" name="dateform">
+        <div class="form-group">
+          <div class="input-group">
+            <input class="form-control" [(ngModel)]="date_Range" type="text" id="date_Range" name="dp" class="disabled" placeholder="Date Range"
+              (click)="dateragneHideAndShow()" style="width:300px">
+            <div class="input-group-append" aria-label="Date Range">
+              <button class="btn btn-outline-secondary" (click)="dateragneHideAndShow()" type="button">
+                <img src="assets/calendar-icon.svg" style="width: 1.2rem; height: 1rem; cursor: pointer;" />
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </form>
+      <label class="sr-only" for="Datepicker">Datepicker</label>
+      <div *ngIf="isOn" class="mt-2">
+        <ngb-datepicker #dp (select)="onDateSelection($event)" [displayMonths]="2" [dayTemplate]="t">
+        </ngb-datepicker>
+        <ng-template #t let-date="date" let-focused="focused">
+          <span class="custom-day" [class.focused]="focused" [class.range]="isFrom(date) || isTo(date) || isInside(date) || isHovered(date)"
+            [class.faded]="isHovered(date) || isInside(date)" (mouseenter)="hoveredDate = date" (mouseleave)="hoveredDate = null">
+            {{ date.day }}
+          </span>
+        </ng-template>
+      </div>
+    </div>
+    <div class="col-md-4 col-lg-7 col-sm-3 col-xs-7">
+      <button (click)="GetDaily()" md-button class="btn btn-primary" aria-label="Get Data Button">GetData</button>
+      <button type="button" class="btn btn-outline-primary ml-2" (click)="GetNoteData()" [attr.aria-expanded]="!isCollapsed"
+        aria-controls="collapseExample">
+        Enter Analytics Notes
+      </button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+    </div>
+    <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8 mt-3">
+        <div id="collapseExample" [ngbCollapse]="isCollapsed">
+            <div class="card">
+              <div class="card-body">
+                  <form name="noteform">
+                      <div class="form-group">
+                        <label for="Note_Title">Note Title</label>
+                        <input type="note_title" class="form-control" [(ngModel)]="note_title" id="note_title" aria-describedby="Note Title" placeholder="Enter note title" name="Note_Title">
+                        
+                      </div>
+                      <div class="form-group">
+                          <label for="Note_Description">Note Description</label>
+                          <input type="note_description" class="form-control"  [(ngModel)]="note_description"  id="note_description" aria-describedby="Note Description" placeholder="Enter note description" name="Note_Description">
+                         
+                        </div>
+                        <div class="form-group">
+                           <label for="date_of_note">Date Of Note</label>
+                        
+                            <form class="form-inline">
+                                <div class="form-group">
+                                  <div class="input-group">
+                                    <input class="form-control" placeholder="yyyy-mm-dd"
+                                           name="dp" [(ngModel)]="date_of_note" ngbDatepicker #d="ngbDatepicker">
+                                    <div class="input-group-append">
+                                      <button class="btn btn-outline-secondary" (click)="d.toggle()" type="button">
+                                        <img src="assets/calendar-icon.svg" style="width: 1.2rem; height: 1rem; cursor: pointer;"/>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </form>
+                          </div>
+                          <div class="form-group">
+                              <label for="User">User</label>
+                              <input type="User" class="form-control" style="width:400px" [(ngModel)]="user" id="user" aria-describedby="user" placeholder="Enter User" name="user">
+                          </div>
+                       <button type="submit" class="btn btn-primary" *ngIf="CrateNoteButton" (click)="CreateNoteData()" >Create Note</button> 
+                       <button type="submit" class="btn btn-primary ml-2" (click)="UpdateNoteData()" *ngIf="UpdateNoteButton">Update Note</button>
+                       <button type="submit" class="btn btn-primary ml-2" (click)="ClearNoteData()" *ngIf="ClearNoteButton">Clear Note</button>
+                        <div class="alert alert-danger mt-2" role="alert" *ngIf="alertNoteflag" aria-label="Message Note">
+                        {{alertMsgNote}}
+                        </div>
+                            
+                      </form>
+                       <table class="table table-hover table-striped text-center table-bordered table-responsive-sm mt-3" aria-label="Session Data Table">
+                          <thead class="thead-dark">
+                            <th>Note Title</th>
+                            <th>Note Description</th>
+                            <th>Date Of Note</th>
+                            <th>User</th>
+                            <th>Opration</th>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor='let result of noteData'>
+                              <td>
+                                {{result.note_title}}
+                              </td>
+                              <td>
+                                {{ result.note_description }}
+                              </td>
+                              <td>
+                                {{ result.date_of_note }}
+                              </td>
+                              <td>
+                                  {{ result.user }}
+                             </td>
+                             <td>
+                                 <button type="button" class="btn btn-outline-primary ml-2" (click)="EditNoteData(result)" [attr.aria-expanded]="!isCollapsed"
+                                  aria-controls="collapseExample">  Edit
+                                </button>
+                                <button type="button" class="btn btn-outline-primary ml-2" (click)="DeleteNoteData(result)" [attr.aria-expanded]="!isCollapsed"
+                                  aria-controls="collapseExample"> Delete
+                                </button>
+                              </td>
+                            </tr>
+                            <tr><td>
+
+                                <nav aria-label="Page navigation example">
+                                    <ul class="pagination">
+                                      <li class="page-item"><a class="page-link" (click)="PageRequested(previousPage)" >Previous</a></li>
+                                      <li class="page-item" *ngFor="let number of Pagecount" (click)="PageRequested(number)"><a class="page-link">{{number}}</a></li>
+                                      <li class="page-item"><a class="page-link" (click)="PageRequested(NextPage)">Next</a></li>
+                                    </ul>
+                                  </nav>
+                            </td></tr>
+                          </tbody>
+                        </table>
+                    
+              </div>
+            </div>
+          </div>
+    </div>
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2"></div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+    </div>
+    <div class="col-md-3 col-lg-3 col-sm-3 col-xs-3">
+      <div class="alert alert-danger" role="alert" *ngIf="alertflag" aria-label="Message">
+        {{alertMsg}}
+      </div>
+    </div>
+    <div class="col-md-7 col-lg-7 col-sm-7 col-xs-7"></div>
+  </div>
+
+</div>
+
+<hr>
+<div class="row">
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+  </div>
+  <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8 mt-1">
+
+    <b>Total Session: {{sessioncount}}</b>
+  </div>
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+  </div>
+  <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8 mt-1">
+    <div id="chart_div" width="300px" class="m-3"></div>
+  </div>
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+  </div>
+  <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8 mt-1">
+    <div class="row mt-4">
+      <div class="col-md-12 col-lg-8 col-sm-12 col-xs-8">
+        <b>Top Ten Most Popular Indicators</b>
+        <table class="table table-hover table-striped text-center table-bordered table-responsive-sm" aria-label="Session Data Table">
+          <thead class="thead-dark">
+            <th>Indicator Name</th>
+            <th>Pageviews</th>
+            <th>Unique Pageviews</th>
+          </thead>
+          <tbody>
+            <tr *ngFor='let result of ChartRecordIndicator'>
+              <td>
+                {{result.indicatorName}}
+              </td>
+              <td>
+                {{ result.visits }}
+              </td>
+              <td>
+                {{ result.uniquePageviews }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-md-12 col-lg-4 col-sm-12 col-xs-4">
+        <b>Top 10 Referring Sites </b>
+        <table class="table table-hover table-striped text-center table-bordered table-responsive-sm">
+          <thead class="thead-dark">
+            <tr>
+              <th>Top 3 referring sites</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tr-row *ngFor="let result of Access">
+              <td>
+                {{ result.rfsite }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+    <div class="row mt-4">
+      <div class="col-md-12 col-lg-12 col-sm-12 col-xs-12">
+        <b>Networks-All</b>
+        <table class="table table-hover table-striped text-center table-bordered table-responsive-sm" aria-label="Networks-All">
+          <thead class="thead-dark">
+            <tr>
+              <th style="width:20%"></th>
+              <th style="width:60%">ALL</th>
+              <th style="width:20%"></th>
+            </tr>
+            <tr>
+              <th>Service Provider</th>
+              <th>Session</th>
+              <th>% of All Session</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor='let result of Network'>
+              <td>
+                {{ result.sprovider }}
+              </td>
+              <td>
+                {{ result.session }}
+              </td>
+              <td>
+                {{ result.sessionAllper }}
+
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-12 col-lg-12 col-sm-12 col-xs-12">
+        <b>Networks-Education</b>
+        <table class="table table-hover table-striped text-center table-bordered table-responsive-sm" aria-label="Networks-Education">
+          <thead class="thead-dark">
+            <tr>
+              <th style="width:20%"></th>
+              <th style="width:60%">Education</th>
+              <th style="width:20%"></th>
+            </tr>
+            <tr>
+              <th>Service Provider</th>
+              <th>Session</th>
+              <th>% of All Session</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor='let result of Network'>
+              <td>
+                {{ result.sproviderEdu }}
+              </td>
+              <td>
+                {{ result.sessionEdu }}
+              </td>
+              <td>
+                {{ result.sessionAllperEdu }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row mt-4">
+
+      <div class="col-md-12 col-lg-12 col-sm-12 col-xs-12">
+        <b>CDC Popular Content</b>
+        <table class="table table-hover table-striped text-center table-bordered table-responsive-sm" aria-label="CDC Popular Content">
+          <thead class="thead-dark">
+            <tr>
+              <th style="width: 20%;">Subtopic Name</th>
+              <th style="width: 38%;" colspan="2">Content Pages</th>
+              <th style="width: 40%;" colspan="2">Data Queries</th>
+            </tr>
+            <tr>
+              <th style="width: 20%;"></th>
+              <th style="width: 19%;">Pageviews </th>
+              <th style="width: 19%;">Unique Pageviews</th>
+              <th style="width: 20%;">Pageviews</th>
+              <th style="width: 20%;">Unique Pageviews</th>
+
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr tr-row *ngFor="let result of ChartRecordCDCPopular">
+              <td style="width: 20%; ">
+                <div>{{result.subtopicName}}</div>
+              </td>
+              <td style="width: 19%; ">
+                {{ result.visitsPages }}
+              </td>
+              <td style=" width: 19%; ">
+                {{ result.uniquePageviewsPage }}
+              </td>
+              <td style="width: 20%;">
+                {{ result.visits }}
+              </td>
+              <td style="width: 20%;">
+                {{ result.uniquePageviews }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-lg-2 col-sm-2 col-xs-2">
+      
+  </div>
+</div>
+
